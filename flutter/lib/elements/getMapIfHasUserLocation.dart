@@ -18,6 +18,7 @@ Widget getMapIfHasUserLocation(
   LatLng poiLocation,
   Function setController,
   Function setPoi,
+  List<Marker> markers,
 ) =>
     (permission == LocationPermission.always ||
             permission == LocationPermission.whileInUse)
@@ -44,7 +45,7 @@ Widget getMapIfHasUserLocation(
                               data.latitude.toString() +
                               "," +
                               data.longitude.toString() +
-                              "&radius=20&rankby=prominence"));
+                              "&radius=50&rankby=prominence"));
                       print("Place Data:");
                       print(jsonDecode(placeData.body));
                       var poiRaw = jsonDecode(placeData.body)["results"][1];
@@ -73,6 +74,10 @@ Widget getMapIfHasUserLocation(
                             poiRaw["geometry"]["location"]["lng"],
                           )));
                     },
+                    markers: () {
+                      print(markers);
+                      return Set<Marker>.from(markers);
+                    }(),
                   )
             : loadingWheelAndMessage("Loading Location...")
         : Column(

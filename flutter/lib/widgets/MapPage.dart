@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -27,6 +29,7 @@ class _MapPage extends State<MapPage> {
   _MapPage() {
     print("Adding Listener");
     _addLocationListener();
+    _addFirestoreListener();
     _renderMapWidget();
   }
 
@@ -35,6 +38,7 @@ class _MapPage extends State<MapPage> {
   GoogleMapsPoi _poi;
   Completer<GoogleMapController> _controller;
   Widget _mapWidget = loadingWheelAndMessage("Initalizing...");
+  List<Marker> _markers = [];
 
   void _toggleSearch() {
     print(_userLocation);
@@ -79,6 +83,7 @@ class _MapPage extends State<MapPage> {
           (_poi != null) ? _poi.location : null,
           _setController,
           _setPoi,
+          _markers,
         );
       },
     );
@@ -86,6 +91,32 @@ class _MapPage extends State<MapPage> {
 
   void _addLocationListener() {
     Geolocator.getPositionStream(distanceFilter: 10).listen(_setUserLocation);
+  }
+
+  void _addFirestoreListener() {
+    Firebase.initializeApp().then((value) {
+      FirebaseFirestore.instance
+          .collection("hackathons")
+          .doc("CalvinHacks2021")
+          .collection("markers")
+          .snapshots()
+          .listen((event) {
+        setState(() {
+          _markers = event.docs.map((e) {
+            Map<String, dynamic> data = e.data();
+            return Marker(
+                markerId: MarkerId(e.id),
+                position: LatLng(data["latitude"], data["longitude"]),
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueOrange),
+                consumeTapEvents: false,
+                alpha: data["open"] ? 1 : 0,);
+                
+          }).toList();
+          _renderMapWidget();
+        });
+      });
+    });
   }
 
   void _setController(GoogleMapController controller) {

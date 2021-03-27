@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:toilet_tracker/elements/googleMapsPoi.dart';
 import 'package:toilet_tracker/elements/loadingWheelAndMessage.dart';
-import 'package:toilet_tracker/widgets/ChangeCapacityPage.dart';
-import 'package:flutter/material.dart';
 
 class PoiCapacityBar extends StatefulWidget {
   PoiCapacityBar({Key key, this.poiInfo}) : super(key: key);
@@ -17,7 +16,9 @@ class _PoiCapacityBar extends State<PoiCapacityBar> {
   _PoiCapacityBar(GoogleMapsPoi poiInfo) {
     _poiInfo = poiInfo;
     var snapshots = FirebaseFirestore.instance
-        .collection("places")
+        .collection("hackathons")
+        .doc("CalvinHacks2021")
+        .collection("markers")
         .doc(poiInfo.placeId)
         .snapshots();
     snapshots.listen(_processNewCrowdAndCapacityData);
@@ -25,9 +26,6 @@ class _PoiCapacityBar extends State<PoiCapacityBar> {
 
   GoogleMapsPoi _poiInfo;
   bool _busyLoading = false;
-  int _crowd = 0;
-  String _capacity = "?";
-
   String _newEditConfirm = "new";
   int _stars = 0;
   bool _open = false;
@@ -35,19 +33,12 @@ class _PoiCapacityBar extends State<PoiCapacityBar> {
 
   void _processNewCrowdAndCapacityData(DocumentSnapshot snapshot) {
     setState(() {
-      _crowd = snapshot.exists ? snapshot.data()["crowd"] : 0;
-      _capacity = snapshot.exists ? snapshot.data()["capacity"] : "?";
+      _stars = snapshot.exists ? snapshot.data()["stars"] : 0;
+      _open = snapshot.exists ? snapshot.data()["open"] : false;
+      _fee = snapshot.exists ? snapshot.data()["fee"] : false;
+      _newEditConfirm = snapshot.exists ? "edit" : "new";
     });
   }
-
-  void _openUpdateCapacity() => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChangeCapacityPage(
-            poiInfo: _poiInfo,
-          ),
-        ),
-      );
 
   void _setNewEdit() {
     setState(() {
@@ -57,6 +48,18 @@ class _PoiCapacityBar extends State<PoiCapacityBar> {
         _newEditConfirm = "confirm";
       } else if (_newEditConfirm == "confirm") {
         _newEditConfirm = "edit";
+        FirebaseFirestore.instance
+            .collection("hackathons")
+            .doc("CalvinHacks2021")
+            .collection("markers")
+            .doc(_poiInfo.placeId)
+            .set({
+          "stars": _stars,
+          "open": _open,
+          "fee": _fee,
+          "latitude": _poiInfo.location.latitude,
+          "longitude": _poiInfo.location.longitude,
+        });
       }
     });
   }
